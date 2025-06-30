@@ -1422,7 +1422,6 @@ static void ip6_negative_advice(struct sock *sk,
 	struct rt6_info *rt = (struct rt6_info *) dst;
 
 	if (rt->rt6i_flags & RTF_CACHE) {
-		rcu_read_lock();
 		if (rt6_check_expired(rt)) {
 			/* counteract the dst_release() in sk_dst_reset() */
 			dst_hold(dst);
@@ -3939,12 +3938,16 @@ int ipv6_sysctl_rtcache_flush(struct ctl_table *ctl, int write,
 {
 	struct net *net;
 	int delay;
+	int ret;
 	if (!write)
 		return -EINVAL;
 
+	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
+	if (ret)
+		return ret;
+
 	net = (struct net *)ctl->extra1;
 	delay = net->ipv6.sysctl.flush_delay;
-	proc_dointvec(ctl, write, buffer, lenp, ppos);
 	fib6_run_gc(delay <= 0 ? 0 : (unsigned long)delay, net, delay > 0);
 	return 0;
 }
